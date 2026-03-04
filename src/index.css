@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zinc-925: #111113;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-zinc-950);
+  color: var(--color-zinc-100);
+}
+
+/* ReactFlow dark theme overrides */
+.react-flow__background {
+  background-color: var(--color-zinc-950) !important;
+}
+
+.react-flow__minimap {
+  background-color: var(--color-zinc-900) !important;
+  border: 1px solid var(--color-zinc-800) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  border: 1px solid var(--color-zinc-700) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background-color: var(--color-zinc-800) !important;
+  border-bottom: 1px solid var(--color-zinc-700) !important;
+  fill: var(--color-zinc-300) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--color-zinc-700) !important;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2 !important;
+}
+
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid var(--color-zinc-600) !important;
+  background-color: var(--color-zinc-800) !important;
+}
+
+.react-flow__handle-connecting {
+  background-color: var(--color-purple-500) !important;
+}
+
+.react-flow__handle-valid {
+  background-color: var(--color-green-500) !important;
+}
+
+/* Text handle color */
+.react-flow__handle[data-handletype="text"] {
+  border-color: var(--color-blue-500) !important;
+}
+
+/* Image handle color */
+.react-flow__handle[data-handletype="image"] {
+  border-color: var(--color-emerald-500) !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-700);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-zinc-600);
+}

@@ -52,7 +52,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     // Optional reference image (e.g. from Import Image node)
     const referenceImage = inputs['image-in'] as ImagePayload | undefined;
 
-    console.log('[Weavy] imageGenerate using model:', model, '| useGlobal:', data.useGlobalModel !== false, '| seed:', seed, '(random:', isRandomSeed, ')', '| hasRef:', !!referenceImage);
+    console.log('[BXAI] imageGenerate using model:', model, '| useGlobal:', data.useGlobalModel !== false, '| seed:', seed, '(random:', isRandomSeed, ')', '| hasRef:', !!referenceImage);
 
     return generateImage({
       prompt,
@@ -73,7 +73,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
       (inputs['prompt-in'] as string) || (data.editInstruction as string);
     if (!instruction) throw new Error('No edit instruction provided.');
 
-    console.log('[Weavy] imageEdit using model:', model, '| useGlobal:', data.useGlobalModel !== false);
+    console.log('[BXAI] imageEdit using model:', model, '| useGlobal:', data.useGlobalModel !== false);
 
     return editImage({
       sourceImage,
@@ -93,7 +93,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     const data = node.data as Record<string, unknown>;
     const radius = (data.radius as number) || 5;
 
-    console.log('[Weavy] Applying blur, radius:', radius);
+    console.log('[BXAI] Applying blur, radius:', radius);
     return blurImage(sourceImage, radius);
   },
 
@@ -106,7 +106,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     const targetHeight = (data.targetHeight as number) || 1024;
     const maintainAspectRatio = data.maintainAspectRatio !== false;
 
-    console.log('[Weavy] Resizing to:', targetWidth, 'x', targetHeight, '| keepRatio:', maintainAspectRatio);
+    console.log('[BXAI] Resizing to:', targetWidth, 'x', targetHeight, '| keepRatio:', maintainAspectRatio);
     return resizeImage(sourceImage, targetWidth, targetHeight, maintainAspectRatio);
   },
 
@@ -120,7 +120,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     const w = (data.cropWidth as number) || 512;
     const h = (data.cropHeight as number) || 512;
 
-    console.log('[Weavy] Cropping:', x, y, w, h);
+    console.log('[BXAI] Cropping:', x, y, w, h);
     return cropImage(sourceImage, x, y, w, h);
   },
 
@@ -128,7 +128,7 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     const sourceImage = inputs['image-in'] as ImagePayload;
     if (!sourceImage) throw new Error('No image connected to Invert node.');
 
-    console.log('[Weavy] Inverting colors');
+    console.log('[BXAI] Inverting colors');
     return invertImage(sourceImage);
   },
 

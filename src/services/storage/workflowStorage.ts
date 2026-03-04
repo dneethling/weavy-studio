@@ -2,7 +2,7 @@ import type { Node, Edge } from '@xyflow/react';
 import type { SavedWorkflow } from '../../types/workflow';
 import { nanoid } from 'nanoid';
 
-const STORAGE_KEY = 'weavy-studio-workflows';
+const STORAGE_KEY = 'bxai-studio-workflows';
 
 export function saveWorkflow(name: string, nodes: Node[], edges: Edge[]): void {
   const workflows = loadWorkflows();

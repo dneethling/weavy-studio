@@ -37,7 +37,7 @@ export async function executeWorkflow(): Promise<void> {
   const flatOrder = levels.flat();
 
   console.log(
-    '[Weavy] Execution plan:',
+    '[BXAI] Execution plan:',
     levels.map((batch, lvl) =>
       `Level ${lvl}: [${batch.map((id) => {
         const node = nodes.find((n) => n.id === id);
@@ -63,7 +63,7 @@ export async function executeWorkflow(): Promise<void> {
       }
     } else {
       // Multiple independent nodes — run in parallel
-      console.log(`[Weavy] Running ${batch.length} nodes in parallel (level ${level})`);
+      console.log(`[BXAI] Running ${batch.length} nodes in parallel (level ${level})`);
 
       const results = await Promise.allSettled(
         batch.map((nodeId) => executeNode(nodeId, nodes, edges))
@@ -100,7 +100,7 @@ async function executeNode(
 ): Promise<string | null> {
   const node = nodes.find((n) => n.id === nodeId)!;
 
-  console.log(`[Weavy] Executing node: ${node.type} (${nodeId.slice(0, 8)})`);
+  console.log(`[BXAI] Executing node: ${node.type} (${nodeId.slice(0, 8)})`);
   useExecutionStore.getState().setNodeStatus(nodeId, 'running');
 
   try {
@@ -120,7 +120,7 @@ async function executeNode(
 
     useExecutionStore.getState().setNodeOutput(nodeId, output);
     useExecutionStore.getState().setNodeStatus(nodeId, 'success');
-    console.log(`[Weavy] Node ${node.type} completed successfully`);
+    console.log(`[BXAI] Node ${node.type} completed successfully`);
 
     // Write output back to node data for preview
     const updateData: Record<string, unknown> = {};
@@ -145,7 +145,7 @@ async function executeNode(
     return null;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[Weavy] Node ${node.type} failed:`, message);
+    console.error(`[BXAI] Node ${node.type} failed:`, message);
     useExecutionStore.getState().setNodeStatus(nodeId, 'error');
     useExecutionStore.getState().setNodeError(nodeId, message);
     return `${node.type} failed: ${message}`;

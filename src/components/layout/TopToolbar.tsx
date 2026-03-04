@@ -112,7 +112,7 @@ export function TopToolbar() {
       <div className="bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Zap size={18} className="text-purple-400" />
-          <span className="text-sm font-semibold text-zinc-100">Weavy Studio</span>
+          <span className="text-sm font-semibold text-zinc-100">BXAI Studio</span>
         </div>
 
         <div className="flex items-center gap-2">

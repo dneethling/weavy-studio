@@ -26,9 +26,9 @@ async function generateWithImagen(options: GenerateImageOptions): Promise<ImageP
   const ai = getGeminiClient();
 
   if (options.referenceImage) {
-    console.warn('[Weavy] Imagen models do not support reference images. The reference will be ignored. Use a Gemini model for reference-based generation.');
+    console.warn('[BXAI] Imagen models do not support reference images. The reference will be ignored. Use a Gemini model for reference-based generation.');
   }
-  console.log('[Weavy] Generating with Imagen model:', options.model, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)');
+  console.log('[BXAI] Generating with Imagen model:', options.model, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)');
 
   const response = await ai.models.generateImages({
     model: options.model,
@@ -40,7 +40,7 @@ async function generateWithImagen(options: GenerateImageOptions): Promise<ImageP
     },
   });
 
-  console.log('[Weavy] Imagen response received, images:', response.generatedImages?.length ?? 0);
+  console.log('[BXAI] Imagen response received, images:', response.generatedImages?.length ?? 0);
 
   const generated = response.generatedImages;
   if (!generated || generated.length === 0) {
@@ -56,7 +56,7 @@ async function generateWithImagen(options: GenerateImageOptions): Promise<ImageP
   const mimeType = 'image/png' as ImagePayload['mimeType'];
   const dimensions = await getImageDimensions(base64, mimeType);
 
-  console.log('[Weavy] Imagen image generated:', dimensions.width, 'x', dimensions.height);
+  console.log('[BXAI] Imagen image generated:', dimensions.width, 'x', dimensions.height);
 
   return {
     base64,
@@ -70,7 +70,7 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<ImageP
   const ai = getGeminiClient();
 
   const hasRef = !!options.referenceImage;
-  console.log('[Weavy] Generating with Gemini model:', options.model, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)', '| hasRef:', hasRef, '| prompt:', options.prompt.slice(0, 80));
+  console.log('[BXAI] Generating with Gemini model:', options.model, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)', '| hasRef:', hasRef, '| prompt:', options.prompt.slice(0, 80));
 
   // Build contents: if a reference image is provided, send it alongside the prompt
   const contents = hasRef
@@ -98,8 +98,8 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<ImageP
   });
 
   // Debug logging
-  console.log('[Weavy] Candidates:', response.candidates?.length ?? 0);
-  console.log('[Weavy] Prompt feedback:', JSON.stringify(response.promptFeedback ?? null));
+  console.log('[BXAI] Candidates:', response.candidates?.length ?? 0);
+  console.log('[BXAI] Prompt feedback:', JSON.stringify(response.promptFeedback ?? null));
 
   // Check for safety blocks
   if (response.promptFeedback?.blockReason) {
@@ -113,7 +113,7 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<ImageP
   }
 
   const candidate = response.candidates[0];
-  console.log('[Weavy] Finish reason:', candidate.finishReason, '| Parts:', candidate.content?.parts?.length ?? 0);
+  console.log('[BXAI] Finish reason:', candidate.finishReason, '| Parts:', candidate.content?.parts?.length ?? 0);
 
   if (candidate.finishReason === 'SAFETY') {
     throw new Error('Blocked by safety filters. Try a different prompt.');
@@ -136,7 +136,7 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<ImageP
       const mimeType = (part.inlineData.mimeType || 'image/png') as ImagePayload['mimeType'];
       const dimensions = await getImageDimensions(base64, mimeType);
 
-      console.log('[Weavy] Image generated:', dimensions.width, 'x', dimensions.height);
+      console.log('[BXAI] Image generated:', dimensions.width, 'x', dimensions.height);
 
       return { base64, mimeType, width: dimensions.width, height: dimensions.height };
     }

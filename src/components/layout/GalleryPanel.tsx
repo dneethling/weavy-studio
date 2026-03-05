@@ -14,7 +14,7 @@ export function GalleryPanel() {
   const handleDownload = (img: GalleryImage) => {
     const link = document.createElement('a');
     link.href = base64ToDataUrl(img.image.base64, img.image.mimeType);
-    link.download = `weavy-${img.id}.${img.image.mimeType.split('/')[1]}`;
+    link.download = `bxai-${img.id}.${img.image.mimeType.split('/')[1]}`;
     link.click();
   };
 

@@ -34,7 +34,7 @@ export function PropertiesPanel() {
   const handleDownload = (image: ImagePayload) => {
     const ext = image.mimeType.split('/')[1];
     // Build a descriptive filename with model + ratio if this is an AI node
-    const parts = ['weavy'];
+    const parts = ['bxai'];
     if (selectedNode.type === 'imageGenerate' || selectedNode.type === 'imageEdit') {
       const useGlobal = data.useGlobalModel !== false;
       const modelId = useGlobal ? globalModel : (data.model as string);

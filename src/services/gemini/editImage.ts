@@ -11,7 +11,7 @@ interface EditImageOptions {
 export async function editImage(options: EditImageOptions): Promise<ImagePayload> {
   const ai = getGeminiClient();
 
-  console.log('[Weavy] Editing image with model:', options.model, '| instruction:', options.instruction.slice(0, 80));
+  console.log('[BxAI] Editing image with model:', options.model, '| instruction:', options.instruction.slice(0, 80));
 
   const response = await ai.models.generateContent({
     model: options.model,
@@ -29,8 +29,8 @@ export async function editImage(options: EditImageOptions): Promise<ImagePayload
     },
   });
 
-  console.log('[Weavy] Edit response - candidates:', response.candidates?.length ?? 'undefined');
-  console.log('[Weavy] Prompt feedback:', JSON.stringify(response.promptFeedback ?? null));
+  console.log('[BxAI] Edit response - candidates:', response.candidates?.length ?? 'undefined');
+  console.log('[BxAI] Prompt feedback:', JSON.stringify(response.promptFeedback ?? null));
 
   if (response.promptFeedback?.blockReason) {
     throw new Error(
@@ -66,7 +66,7 @@ export async function editImage(options: EditImageOptions): Promise<ImagePayload
 
       const dimensions = await getImageDimensions(base64, mimeType);
 
-      console.log('[Weavy] Edited image:', dimensions.width, 'x', dimensions.height);
+      console.log('[BxAI] Edited image:', dimensions.width, 'x', dimensions.height);
 
       return {
         base64,

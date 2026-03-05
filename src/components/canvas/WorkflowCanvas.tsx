@@ -90,7 +90,7 @@ export function WorkflowCanvas() {
     (event: DragEvent) => {
       event.preventDefault();
 
-      const nodeType = event.dataTransfer.getData('application/weavy-node-type');
+      const nodeType = event.dataTransfer.getData('application/bxai-node-type');
       if (!nodeType || !NODE_DEFINITIONS[nodeType]) return;
 
       const rfInstance = reactFlowInstance.current;

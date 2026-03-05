@@ -1,5 +1,5 @@
 {
-  "name": "weavy-studio",
+  "name": "bxai-studio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "@google/genai": "^1.43.0",
     "@xyflow/react": "^12.10.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.10.0",
     "lucide-react": "^0.576.0",
     "nanoid": "^5.1.6",
     "react": "^19.2.0",

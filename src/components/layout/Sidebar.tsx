@@ -23,7 +23,7 @@ const ICONS: Record<string, typeof Type> = {
 
 export function Sidebar() {
   const onDragStart = (event: DragEvent, nodeType: string) => {
-    event.dataTransfer.setData('application/weavy-node-type', nodeType);
+    event.dataTransfer.setData('application/bxai-node-type', nodeType);
     event.dataTransfer.effectAllowed = 'move';
   };
 

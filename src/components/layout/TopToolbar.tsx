@@ -1,9 +1,10 @@
-import { Play, Square, Save, FolderOpen, Trash2, Zap, Settings } from 'lucide-react';
+import { Play, Square, Save, FolderOpen, Trash2, Zap, Settings, LogOut } from 'lucide-react';
 import { Button } from '../shared/Button';
 import { useExecutionStore } from '../../store/useExecutionStore';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useToastStore } from '../../store/useToastStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { executeWorkflow } from '../../services/execution/engine';
 import { useState } from 'react';
 import { Modal } from '../shared/Modal';
@@ -21,6 +22,8 @@ export function TopToolbar() {
   const globalModel = useSettingsStore((s) => s.globalModel);
   const setGlobalModel = useSettingsStore((s) => s.setGlobalModel);
   const addToast = useToastStore((s) => s.addToast);
+  const authUser = useAuthStore((s) => s.user);
+  const authSignOut = useAuthStore((s) => s.signOut);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
@@ -112,7 +115,7 @@ export function TopToolbar() {
       <div className="bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Zap size={18} className="text-purple-400" />
-          <span className="text-sm font-semibold text-zinc-100">Weavy Studio</span>
+          <span className="text-sm font-semibold text-zinc-100">BxAI Studio</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -182,6 +185,34 @@ export function TopToolbar() {
             <Trash2 size={14} />
             Clear
           </Button>
+
+          {/* User + Sign Out */}
+          {authUser && (
+            <>
+              <div className="w-px h-5 bg-zinc-700 mx-1" />
+              <div className="flex items-center gap-2">
+                {authUser.photoURL ? (
+                  <img
+                    src={authUser.photoURL}
+                    alt=""
+                    className="w-5 h-5 rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-purple-500/30 flex items-center justify-center text-[9px] text-purple-300 font-bold">
+                    {authUser.email?.[0]?.toUpperCase()}
+                  </div>
+                )}
+                <button
+                  onClick={authSignOut}
+                  className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

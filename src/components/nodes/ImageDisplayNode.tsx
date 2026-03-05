@@ -47,7 +47,7 @@ function useSourceMetadata(nodeId: string) {
 }
 
 function buildFilename(label: string | undefined, modelLabel: string | undefined, aspectRatio: string | undefined, ext: string) {
-  const parts = ['weavy'];
+  const parts = ['bxai'];
   if (modelLabel) parts.push(modelLabel.replace(/[^a-zA-Z0-9.()-]/g, '_'));
   if (aspectRatio) parts.push(aspectRatio.replace(':', 'x'));
   parts.push(label || 'output');

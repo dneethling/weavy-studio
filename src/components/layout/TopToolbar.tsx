@@ -1,4 +1,4 @@
-import { Play, Square, Save, FolderOpen, Trash2, Zap, Settings, LogOut } from 'lucide-react';
+import { Play, Square, Save, FolderOpen, Trash2, Zap, Settings, LogOut, Download, Upload } from 'lucide-react';
 import { Button } from '../shared/Button';
 import { useExecutionStore } from '../../store/useExecutionStore';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
@@ -6,9 +6,9 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { useToastStore } from '../../store/useToastStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { executeWorkflow } from '../../services/execution/engine';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Modal } from '../shared/Modal';
-import { saveWorkflow, loadWorkflows, deleteWorkflow } from '../../services/storage/workflowStorage';
+import { saveWorkflow, loadWorkflows, deleteWorkflow, exportWorkflow, exportAllWorkflows, importWorkflows } from '../../services/storage/workflowStorage';
 import { GEMINI_MODELS } from '../../constants/defaults';
 
 export function TopToolbar() {
@@ -31,6 +31,32 @@ export function TopToolbar() {
   const [saveName, setSaveName] = useState('');
   const [savedWorkflows, setSavedWorkflows] = useState<ReturnType<typeof loadWorkflows>>([]);
   const [tempApiKey, setTempApiKey] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const count = await importWorkflows(file);
+      setSavedWorkflows(loadWorkflows());
+      addToast('success', `Imported ${count} workflow${count > 1 ? 's' : ''}.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Import failed';
+      addToast('error', msg);
+    }
+    // Reset the input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleExport = (id: string) => {
+    exportWorkflow(id);
+    addToast('success', 'Workflow downloaded.');
+  };
+
+  const handleExportAll = () => {
+    exportAllWorkflows();
+    addToast('success', 'All workflows downloaded.');
+  };
 
   const handleRun = async () => {
     if (isRunning) return;
@@ -237,10 +263,39 @@ export function TopToolbar() {
       </Modal>
 
       {/* Load Modal */}
-      <Modal open={showLoadModal} onClose={() => setShowLoadModal(false)} title="Load Workflow">
+      <Modal open={showLoadModal} onClose={() => setShowLoadModal(false)} title="Workflows">
+        {/* Hidden file input for import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          className="hidden"
+        />
+
+        {/* Import / Export All toolbar */}
+        <div className="flex items-center gap-2 mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={13} />
+            Import
+          </Button>
+          {savedWorkflows.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleExportAll}>
+              <Download size={13} />
+              Export All
+            </Button>
+          )}
+        </div>
+
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {savedWorkflows.length === 0 ? (
-            <p className="text-sm text-zinc-500 text-center py-4">No saved workflows</p>
+            <p className="text-sm text-zinc-500 text-center py-4">
+              No saved workflows. Import a .json file or save a workflow first.
+            </p>
           ) : (
             savedWorkflows.map((wf) => (
               <div
@@ -249,16 +304,26 @@ export function TopToolbar() {
               >
                 <button
                   onClick={() => handleLoad(wf.id)}
-                  className="text-sm text-zinc-200 hover:text-white text-left flex-1"
+                  className="text-sm text-zinc-200 hover:text-white text-left flex-1 truncate"
                 >
                   {wf.name}
                 </button>
-                <button
-                  onClick={() => handleDelete(wf.id)}
-                  className="text-zinc-600 hover:text-red-400 ml-2"
-                >
-                  <Trash2 size={12} />
-                </button>
+                <div className="flex items-center gap-1 ml-2 shrink-0">
+                  <button
+                    onClick={() => handleExport(wf.id)}
+                    className="text-zinc-600 hover:text-purple-400 p-1"
+                    title="Download workflow"
+                  >
+                    <Download size={12} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(wf.id)}
+                    className="text-zinc-600 hover:text-red-400 p-1"
+                    title="Delete workflow"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
               </div>
             ))
           )}

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { DEFAULT_MODEL } from '../constants/defaults';
 
-const STORAGE_KEY = 'weavy-studio-settings';
+const STORAGE_KEY = 'bxai-studio-settings';
 
 interface SettingsState {
   apiKey: string;

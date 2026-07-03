@@ -1,41 +1,41 @@
 import { create } from 'zustand';
-import type { ImagePayload } from '../types/nodes';
+import type { MediaPayload } from '../types/nodes';
 import { nanoid } from 'nanoid';
 
-export interface GalleryImage {
+export interface GalleryItem {
   id: string;
-  image: ImagePayload;
+  media: MediaPayload;
   sourceNodeId: string;
   sourceNodeLabel: string;
   timestamp: number;
 }
 
 interface GalleryState {
-  images: GalleryImage[];
-  addImage: (image: ImagePayload, sourceNodeId: string, sourceNodeLabel: string) => void;
-  removeImage: (id: string) => void;
+  items: GalleryItem[];
+  addMedia: (media: MediaPayload, sourceNodeId: string, sourceNodeLabel: string) => void;
+  removeItem: (id: string) => void;
   clearGallery: () => void;
 }
 
 export const useGalleryStore = create<GalleryState>()((set, get) => ({
-  images: [],
+  items: [],
 
-  addImage: (image, sourceNodeId, sourceNodeLabel) => {
-    const entry: GalleryImage = {
+  addMedia: (media, sourceNodeId, sourceNodeLabel) => {
+    const entry: GalleryItem = {
       id: nanoid(8),
-      image,
+      media,
       sourceNodeId,
       sourceNodeLabel,
       timestamp: Date.now(),
     };
-    set({ images: [entry, ...get().images] });
+    set({ items: [entry, ...get().items] });
   },
 
-  removeImage: (id) => {
-    set({ images: get().images.filter((img) => img.id !== id) });
+  removeItem: (id) => {
+    set({ items: get().items.filter((item) => item.id !== id) });
   },
 
   clearGallery: () => {
-    set({ images: [] });
+    set({ items: [] });
   },
 }));

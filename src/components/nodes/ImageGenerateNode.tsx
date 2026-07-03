@@ -1,8 +1,9 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
-import { Sparkles, Globe, Unplug } from 'lucide-react';
-import { BaseNode, useNodeData } from './BaseNode';
-import { GEMINI_MODELS, ASPECT_RATIOS } from '../../constants/defaults';
+import { Sparkles, Globe, Unplug, Layers } from 'lucide-react';
+import { BaseNode } from './BaseNode';
+import { useNodeData } from './useNodeData';
+import { GEMINI_MODELS, ASPECT_RATIOS, MAX_BATCH_COUNT } from '../../constants/defaults';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { base64ToDataUrl } from '../../services/imageProcessing/imageConversion';
 import type { ImageGenerateData } from '../../types/nodes';
@@ -58,31 +59,85 @@ export const ImageGenerateNode = memo(function ImageGenerateNode(props: NodeProp
           )}
         </div>
 
-        <div>
-          <label className="text-[9px] text-zinc-500 block mb-0.5">Aspect Ratio</label>
-          <select
-            value={data.aspectRatio || '1:1'}
-            onChange={(e) => update({ aspectRatio: e.target.value })}
-            className="nodrag w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[11px] text-zinc-300 focus:outline-none focus:border-purple-500"
-          >
-            {ASPECT_RATIOS.map((r) => (
-              <option key={r.id} value={r.id}>{r.label}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-1.5">
+          <div>
+            <label className="text-[9px] text-zinc-500 block mb-0.5">Aspect Ratio</label>
+            <select
+              value={data.aspectRatio || '1:1'}
+              onChange={(e) => update({ aspectRatio: e.target.value })}
+              className="nodrag w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[11px] text-zinc-300 focus:outline-none focus:border-purple-500"
+            >
+              {ASPECT_RATIOS.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[9px] text-zinc-500 flex items-center gap-0.5 mb-0.5">
+              <Layers size={8} />
+              Variations
+            </label>
+            <select
+              value={data.batchCount || 1}
+              onChange={(e) => update({ batchCount: Number(e.target.value) })}
+              className="nodrag w-full px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[11px] text-zinc-300 focus:outline-none focus:border-purple-500"
+            >
+              {Array.from({ length: MAX_BATCH_COUNT }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>{n === 1 ? '1 image' : `${n} images`}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {data.outputImage ? (
-          <img
-            src={base64ToDataUrl(data.outputImage.base64, data.outputImage.mimeType)}
-            alt="Generated"
-            className="w-full rounded border border-zinc-700"
-          />
-        ) : (
-          <div className="w-full h-24 bg-zinc-800/50 rounded border border-dashed border-zinc-700 flex items-center justify-center">
-            <span className="text-[10px] text-zinc-600">No image yet</span>
-          </div>
-        )}
+        <OutputPreview images={data.outputImages} fallback={data.outputImage} />
       </div>
     </BaseNode>
   );
 });
+
+function OutputPreview({
+  images,
+  fallback,
+}: {
+  images?: ImageGenerateData['outputImages'];
+  fallback?: ImageGenerateData['outputImage'];
+}) {
+  const list = images && images.length > 0 ? images : fallback ? [fallback] : [];
+
+  if (list.length === 0) {
+    return (
+      <div className="w-full h-24 bg-zinc-800/50 rounded border border-dashed border-zinc-700 flex items-center justify-center">
+        <span className="text-[10px] text-zinc-600">No image yet</span>
+      </div>
+    );
+  }
+
+  if (list.length === 1) {
+    return (
+      <img
+        src={base64ToDataUrl(list[0].base64, list[0].mimeType)}
+        alt="Generated"
+        className="w-full rounded border border-zinc-700"
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="grid grid-cols-2 gap-1">
+        {list.slice(0, 4).map((img, i) => (
+          <img
+            key={i}
+            src={base64ToDataUrl(img.base64, img.mimeType)}
+            alt={`Variation ${i + 1}`}
+            className="w-full aspect-square object-cover rounded border border-zinc-700"
+          />
+        ))}
+      </div>
+      <p className="text-[9px] text-zinc-500 text-center">
+        {list.length} variation{list.length === 1 ? '' : 's'}
+        {list.length > 4 ? ` (showing 4)` : ''}
+      </p>
+    </div>
+  );
+}

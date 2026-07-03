@@ -21,3 +21,14 @@ export function getGeminiClient(): GoogleGenAI {
 
   return clientInstance;
 }
+
+/** The raw API key — needed for direct file downloads (e.g. Veo video files). */
+export function getApiKey(): string {
+  const apiKey = useSettingsStore.getState().apiKey;
+  if (!apiKey) {
+    throw new Error(
+      'No API key set. Click the Settings (gear) icon in the toolbar to enter your Google AI Studio API key.'
+    );
+  }
+  return apiKey;
+}

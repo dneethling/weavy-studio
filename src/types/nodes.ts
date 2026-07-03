@@ -1,6 +1,6 @@
 import type { Node } from '@xyflow/react';
 
-export type HandleDataType = 'text' | 'image';
+export type HandleDataType = 'text' | 'image' | 'video';
 
 export interface ImagePayload {
   base64: string;
@@ -8,6 +8,25 @@ export interface ImagePayload {
   width: number;
   height: number;
 }
+
+export interface VideoPayload {
+  base64: string;
+  mimeType: 'video/mp4' | 'video/webm';
+  /** Duration in seconds, when known */
+  durationSeconds?: number;
+}
+
+export type MediaPayload = ImagePayload | VideoPayload;
+
+export function isVideoPayload(payload: MediaPayload): payload is VideoPayload {
+  return payload.mimeType.startsWith('video/');
+}
+
+/**
+ * Values flowing along edges. Any output may be a batch (array) — the
+ * execution engine automatically maps downstream executors over batches.
+ */
+export type FlowValue = unknown | unknown[];
 
 // --- Per-node data shapes ---
 
@@ -22,7 +41,33 @@ export interface ImageGenerateData {
   useGlobalModel?: boolean;
   seed?: number;
   randomSeed?: boolean;
+  /** Number of variations generated per input (1-8). */
+  batchCount?: number;
   outputImage?: ImagePayload;
+  /** All outputs of the last run (batch runs produce several). */
+  outputImages?: ImagePayload[];
+  [key: string]: unknown;
+}
+
+export interface VideoGenerateData {
+  model: string;
+  aspectRatio: string;
+  resolution: string;
+  negativePrompt?: string;
+  outputVideo?: VideoPayload;
+  outputVideos?: VideoPayload[];
+  [key: string]: unknown;
+}
+
+export interface VideoDisplayData {
+  label: string;
+  displayVideos?: VideoPayload[];
+  [key: string]: unknown;
+}
+
+export interface PromptListData {
+  /** One prompt per line — fans out as a batch of text values. */
+  text: string;
   [key: string]: unknown;
 }
 
@@ -37,6 +82,8 @@ export interface ImageEditData {
 export interface ImageDisplayData {
   label: string;
   displayImage?: ImagePayload;
+  /** Full batch from the last run — rendered as a grid. */
+  displayImages?: ImagePayload[];
   [key: string]: unknown;
 }
 
@@ -118,7 +165,10 @@ export interface SeedData {
 // --- Typed node aliases ---
 
 export type TextPromptNode = Node<TextPromptData, 'textPrompt'>;
+export type PromptListNode = Node<PromptListData, 'promptList'>;
 export type ImageGenerateNode = Node<ImageGenerateData, 'imageGenerate'>;
+export type VideoGenerateNode = Node<VideoGenerateData, 'videoGenerate'>;
+export type VideoDisplayNode = Node<VideoDisplayData, 'videoDisplay'>;
 export type ImageEditNode = Node<ImageEditData, 'imageEdit'>;
 export type ImageDisplayNode = Node<ImageDisplayData, 'imageDisplay'>;
 export type ComposeNode = Node<ComposeData, 'compose'>;
@@ -132,7 +182,10 @@ export type StickyNoteNode = Node<StickyNoteData, 'stickyNote'>;
 
 export type WorkflowNode =
   | TextPromptNode
+  | PromptListNode
   | ImageGenerateNode
+  | VideoGenerateNode
+  | VideoDisplayNode
   | ImageEditNode
   | ImageDisplayNode
   | ComposeNode

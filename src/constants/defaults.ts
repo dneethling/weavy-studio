@@ -8,6 +8,36 @@ export const GEMINI_MODELS = [
 
 export const DEFAULT_MODEL = GEMINI_MODELS[0].id;
 
+export const VEO_MODELS = [
+  { id: 'veo-3.1-fast-generate-preview', label: 'Veo 3.1 Fast' },
+  { id: 'veo-3.1-generate-preview', label: 'Veo 3.1' },
+  { id: 'veo-3.0-fast-generate-001', label: 'Veo 3 Fast' },
+  { id: 'veo-3.0-generate-001', label: 'Veo 3' },
+  { id: 'veo-2.0-generate-001', label: 'Veo 2' },
+] as const;
+
+export const DEFAULT_VIDEO_MODEL = VEO_MODELS[0].id;
+
+export const VIDEO_ASPECT_RATIOS = [
+  { id: '16:9', label: '16:9 Landscape' },
+  { id: '9:16', label: '9:16 Portrait' },
+] as const;
+
+export const VIDEO_RESOLUTIONS = [
+  { id: '720p', label: '720p' },
+  { id: '1080p', label: '1080p (16:9 only)' },
+] as const;
+
+/** Max variations a single Generate node can fan out per input. */
+export const MAX_BATCH_COUNT = 8;
+
+/** Concurrency options for parallel AI requests. */
+export const CONCURRENCY_OPTIONS = [1, 2, 4, 6, 8, 12, 16] as const;
+export const DEFAULT_CONCURRENCY = 4;
+
+/** Safety valve: max items a single batch can expand to in one run. */
+export const MAX_BATCH_ITEMS = 64;
+
 export const ASPECT_RATIOS = [
   { id: '1:1', label: '1:1 Square' },
   { id: '16:9', label: '16:9 Landscape' },

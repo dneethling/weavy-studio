@@ -2,9 +2,9 @@ import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { useExecutionStore } from '../../store/useExecutionStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { NODE_DEFINITIONS } from '../../constants/nodeDefinitions';
-import { GEMINI_MODELS, ASPECT_RATIOS } from '../../constants/defaults';
+import { GEMINI_MODELS, VEO_MODELS, ASPECT_RATIOS, VIDEO_ASPECT_RATIOS, VIDEO_RESOLUTIONS, MAX_BATCH_COUNT } from '../../constants/defaults';
 import { base64ToDataUrl } from '../../services/imageProcessing/imageConversion';
-import { X, Download, Globe, Unplug, Shuffle } from 'lucide-react';
+import { X, Download, Globe, Unplug, Shuffle, Layers } from 'lucide-react';
 import type { ImagePayload } from '../../types/nodes';
 
 export function PropertiesPanel() {
@@ -14,6 +14,7 @@ export function PropertiesPanel() {
   const setSelectedNode = useWorkflowStore((s) => s.setSelectedNode);
   const nodeStatuses = useExecutionStore((s) => s.nodeStatuses);
   const nodeErrors = useExecutionStore((s) => s.nodeErrors);
+  const nodeWarnings = useExecutionStore((s) => s.nodeWarnings);
 
   const globalModel = useSettingsStore((s) => s.globalModel);
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
@@ -29,6 +30,7 @@ export function PropertiesPanel() {
   const def = NODE_DEFINITIONS[selectedNode.type!];
   const status = nodeStatuses[selectedNode.id];
   const error = nodeErrors[selectedNode.id];
+  const warning = nodeWarnings[selectedNode.id];
   const data = selectedNode.data as Record<string, unknown>;
 
   const handleDownload = (image: ImagePayload) => {
@@ -67,6 +69,101 @@ export function PropertiesPanel() {
         {status === 'error' && error && (
           <div className="px-2.5 py-2 bg-red-500/10 border border-red-500/30 rounded-md">
             <p className="text-[11px] text-red-400">{error}</p>
+          </div>
+        )}
+
+        {warning && (
+          <div className="px-2.5 py-2 bg-amber-500/10 border border-amber-500/30 rounded-md">
+            <p className="text-[11px] text-amber-400">{warning}</p>
+          </div>
+        )}
+
+        {/* Prompt List properties */}
+        {selectedNode.type === 'promptList' && (
+          <div>
+            <label className="block text-[11px] font-medium text-zinc-500 mb-1">Prompts (one per line)</label>
+            <textarea
+              value={(data.text as string) || ''}
+              onChange={(e) => updateNodeData(selectedNode.id, { text: e.target.value })}
+              rows={10}
+              className="w-full px-2.5 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-blue-500 font-mono"
+              placeholder={'a cat in a spacesuit\na dog on the moon\na fox in a forest'}
+            />
+            <p className="text-[10px] text-zinc-600 mt-1">
+              Every line fans out through the graph as its own run — connect this to a Generate
+              node to produce one output (or one batch) per prompt.
+            </p>
+          </div>
+        )}
+
+        {/* Video Generate properties */}
+        {selectedNode.type === 'videoGenerate' && (
+          <>
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-500 mb-1">Model</label>
+              <select
+                value={(data.model as string) || VEO_MODELS[0].id}
+                onChange={(e) => updateNodeData(selectedNode.id, { model: e.target.value })}
+                className="w-full px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-200 focus:outline-none focus:border-fuchsia-500"
+              >
+                {VEO_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-500 mb-1">Aspect Ratio</label>
+                <select
+                  value={(data.aspectRatio as string) || '16:9'}
+                  onChange={(e) => updateNodeData(selectedNode.id, { aspectRatio: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-200 focus:outline-none focus:border-fuchsia-500"
+                >
+                  {VIDEO_ASPECT_RATIOS.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-500 mb-1">Resolution</label>
+                <select
+                  value={(data.resolution as string) || '720p'}
+                  onChange={(e) => updateNodeData(selectedNode.id, { resolution: e.target.value })}
+                  className="w-full px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-200 focus:outline-none focus:border-fuchsia-500"
+                >
+                  {VIDEO_RESOLUTIONS.map((r) => (
+                    <option key={r.id} value={r.id}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-500 mb-1">Negative Prompt</label>
+              <textarea
+                value={(data.negativePrompt as string) || ''}
+                onChange={(e) => updateNodeData(selectedNode.id, { negativePrompt: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-fuchsia-500"
+                placeholder="What to avoid in the video…"
+              />
+            </div>
+            <p className="text-[10px] text-zinc-600">
+              Connect an image to the First Frame input for image-to-video. Video renders take a
+              few minutes; batches render in parallel.
+            </p>
+          </>
+        )}
+
+        {/* Video Display properties */}
+        {selectedNode.type === 'videoDisplay' && (
+          <div>
+            <label className="block text-[11px] font-medium text-zinc-500 mb-1">Label</label>
+            <input
+              type="text"
+              value={(data.label as string) || ''}
+              onChange={(e) => updateNodeData(selectedNode.id, { label: e.target.value })}
+              className="w-full px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-emerald-500"
+            />
           </div>
         )}
 
@@ -110,6 +207,25 @@ export function PropertiesPanel() {
               nodeId={selectedNode.id}
               updateNodeData={updateNodeData}
             />
+            <div>
+              <label className="flex items-center gap-1 text-[11px] font-medium text-zinc-500 mb-1">
+                <Layers size={11} />
+                Variations per prompt
+              </label>
+              <select
+                value={(data.batchCount as number) || 1}
+                onChange={(e) => updateNodeData(selectedNode.id, { batchCount: Number(e.target.value) })}
+                className="w-full px-2.5 py-1.5 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-200 focus:outline-none focus:border-purple-500"
+              >
+                {Array.from({ length: MAX_BATCH_COUNT }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>{n === 1 ? '1 image' : `${n} images`}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-zinc-600 mt-1">
+                Combine with a Prompt List for full fan-out: 5 prompts × 4 variations = 20 images
+                in one run.
+              </p>
+            </div>
           </>
         )}
 

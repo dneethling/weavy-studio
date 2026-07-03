@@ -13,10 +13,13 @@ import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { NODE_DEFINITIONS } from '../../constants/nodeDefinitions';
 
 import { TextPromptNode } from '../nodes/TextPromptNode';
+import { PromptListNode } from '../nodes/PromptListNode';
 import { ImageImportNode } from '../nodes/ImageImportNode';
 import { ImageGenerateNode } from '../nodes/ImageGenerateNode';
 import { ImageEditNode } from '../nodes/ImageEditNode';
 import { ImageDisplayNode } from '../nodes/ImageDisplayNode';
+import { VideoGenerateNode } from '../nodes/VideoGenerateNode';
+import { VideoDisplayNode } from '../nodes/VideoDisplayNode';
 import { ComposeNode } from '../nodes/ComposeNode';
 import { BlurNode } from '../nodes/BlurNode';
 import { ResizeNode } from '../nodes/ResizeNode';
@@ -30,10 +33,13 @@ import { BottomToolbar } from '../layout/BottomToolbar';
 // CRITICAL: Define outside component to prevent infinite re-renders
 const nodeTypes = {
   textPrompt: TextPromptNode,
+  promptList: PromptListNode,
   imageImport: ImageImportNode,
   imageGenerate: ImageGenerateNode,
   imageEdit: ImageEditNode,
   imageDisplay: ImageDisplayNode,
+  videoGenerate: VideoGenerateNode,
+  videoDisplay: VideoDisplayNode,
   compose: ComposeNode,
   blur: BlurNode,
   resize: ResizeNode,

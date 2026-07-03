@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Layers } from 'lucide-react';
-import { BaseNode, useNodeData } from './BaseNode';
+import { BaseNode } from './BaseNode';
+import { useNodeData } from './useNodeData';
 import { base64ToDataUrl } from '../../services/imageProcessing/imageConversion';
 import type { ComposeData } from '../../types/nodes';
 

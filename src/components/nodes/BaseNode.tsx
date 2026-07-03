@@ -1,4 +1,4 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
 import { cn } from '../../utils/cn';
 import { NODE_DEFINITIONS } from '../../constants/nodeDefinitions';
 import { useExecutionStore } from '../../store/useExecutionStore';
@@ -15,9 +15,17 @@ interface BaseNodeProps {
   children: ReactNode;
 }
 
+const HANDLE_COLORS: Record<string, string> = {
+  text: '!border-blue-500',
+  image: '!border-emerald-500',
+  video: '!border-fuchsia-500',
+};
+
 export function BaseNode({ id, type, icon, selected, children }: BaseNodeProps) {
   const def = NODE_DEFINITIONS[type];
   const status = useExecutionStore((s) => s.nodeStatuses[id]);
+  const progress = useExecutionStore((s) => s.nodeProgress[id]);
+  const warning = useExecutionStore((s) => s.nodeWarnings[id]);
   const setSelectedNode = useWorkflowStore((s) => s.setSelectedNode);
 
   return (
@@ -35,8 +43,16 @@ export function BaseNode({ id, type, icon, selected, children }: BaseNodeProps) 
       <div className={cn('flex items-center gap-2 px-3 py-2 rounded-t-lg', def.color)}>
         <div className="text-white/90">{icon}</div>
         <span className="text-xs font-medium text-white flex-1">{def.label}</span>
+        {status === 'running' && progress && progress.total > 1 && (
+          <span className="text-[9px] font-mono text-white/90 bg-black/30 px-1.5 py-0.5 rounded-full">
+            {progress.done}/{progress.total}
+          </span>
+        )}
         {status === 'running' && <Spinner className="h-3 w-3 border-white/40 border-t-white" />}
-        {status === 'success' && <CheckCircle size={12} className="text-white/80" />}
+        {status === 'success' && warning && (
+          <AlertCircle size={12} className="text-amber-300" />
+        )}
+        {status === 'success' && !warning && <CheckCircle size={12} className="text-white/80" />}
         {status === 'error' && <AlertCircle size={12} className="text-white/80" />}
       </div>
 
@@ -53,7 +69,7 @@ export function BaseNode({ id, type, icon, selected, children }: BaseNodeProps) 
           data-handletype={input.dataType}
           className={cn(
             '!w-3 !h-3 !border-2 !bg-zinc-800',
-            input.dataType === 'text' ? '!border-blue-500' : '!border-emerald-500'
+            HANDLE_COLORS[input.dataType] ?? '!border-zinc-500'
           )}
           style={{ top: `${((i + 1) / (def.inputs.length + 1)) * 100}%` }}
           title={input.label}
@@ -70,7 +86,7 @@ export function BaseNode({ id, type, icon, selected, children }: BaseNodeProps) 
           data-handletype={output.dataType}
           className={cn(
             '!w-3 !h-3 !border-2 !bg-zinc-800',
-            output.dataType === 'text' ? '!border-blue-500' : '!border-emerald-500'
+            HANDLE_COLORS[output.dataType] ?? '!border-zinc-500'
           )}
           style={{ top: `${((i + 1) / (def.outputs.length + 1)) * 100}%` }}
           title={output.label}
@@ -80,13 +96,3 @@ export function BaseNode({ id, type, icon, selected, children }: BaseNodeProps) 
   );
 }
 
-export function useNodeData<T>(props: NodeProps): [T, (updates: Partial<T>) => void] {
-  const data = props.data as T;
-  const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
-
-  const update = (updates: Partial<T>) => {
-    updateNodeData(props.id, updates as Record<string, unknown>);
-  };
-
-  return [data, update];
-}

@@ -1,10 +1,11 @@
 import type { Node } from '@xyflow/react';
-import { generateImage } from '../gemini/generateImage';
+import { generateImageBatch } from '../gemini/generateImage';
 import { editImage } from '../gemini/editImage';
+import { generateVideo } from '../gemini/generateVideo';
 import { compositeImages } from '../imageProcessing/compositing';
 import { blurImage, resizeImage, cropImage, invertImage } from '../imageProcessing/filters';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import type { ImagePayload, ComposeData } from '../../types/nodes';
+import type { ImagePayload, VideoPayload, ComposeData } from '../../types/nodes';
 
 type NodeExecutor = (
   node: Node,
@@ -27,6 +28,20 @@ function resolveModel(data: Record<string, unknown>): string {
 export const nodeExecutors: Record<string, NodeExecutor> = {
   textPrompt: async (node) => {
     return (node.data as { text: string }).text;
+  },
+
+  promptList: async (node) => {
+    // One prompt per line — outputs a batch that fans out downstream
+    const text = (node.data as { text: string }).text || '';
+    const prompts = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    if (prompts.length === 0) {
+      throw new Error('Prompt List is empty. Add one prompt per line.');
+    }
+    console.log(`[BxAI] Prompt List fanning out ${prompts.length} prompt(s)`);
+    return prompts;
   },
 
   imageImport: async (node) => {
@@ -52,15 +67,46 @@ export const nodeExecutors: Record<string, NodeExecutor> = {
     // Optional reference image (e.g. from Import Image node)
     const referenceImage = inputs['image-in'] as ImagePayload | undefined;
 
-    console.log('[BxAI] imageGenerate using model:', model, '| useGlobal:', data.useGlobalModel !== false, '| seed:', seed, '(random:', isRandomSeed, ')', '| hasRef:', !!referenceImage);
+    const batchCount = Math.max(1, Math.min(8, (data.batchCount as number) || 1));
 
-    return generateImage({
+    console.log('[BxAI] imageGenerate using model:', model, '| useGlobal:', data.useGlobalModel !== false, '| seed:', seed, '(random:', isRandomSeed, ')', '| hasRef:', !!referenceImage, '| batch:', batchCount);
+
+    const images = await generateImageBatch(
+      {
+        prompt,
+        model,
+        aspectRatio: (data.aspectRatio as string) || '1:1',
+        seed,
+        referenceImage,
+      },
+      batchCount
+    );
+
+    // Single image stays scalar for backward compatibility; batches flow as arrays
+    return images.length === 1 ? images[0] : images;
+  },
+
+  videoGenerate: async (node, inputs) => {
+    const prompt = inputs['prompt-in'] as string;
+    if (!prompt) throw new Error('No prompt connected to Generate Video node.');
+
+    const data = node.data as Record<string, unknown>;
+    const referenceImage = inputs['image-in'] as ImagePayload | undefined;
+
+    return generateVideo({
       prompt,
-      model,
-      aspectRatio: (data.aspectRatio as string) || '1:1',
-      seed,
+      model: (data.model as string) || 'veo-3.1-fast-generate-preview',
+      aspectRatio: (data.aspectRatio as string) || '16:9',
+      resolution: (data.resolution as string) || '720p',
+      negativePrompt: (data.negativePrompt as string) || undefined,
       referenceImage,
     });
+  },
+
+  videoDisplay: async (_node, inputs) => {
+    const video = inputs['video-in'] as VideoPayload;
+    if (!video) throw new Error('No video connected to Display Video node.');
+    return video;
   },
 
   imageEdit: async (node, inputs) => {

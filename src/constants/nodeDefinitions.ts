@@ -28,6 +28,16 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     outputs: [{ id: 'text-out', dataType: 'text', label: 'Text' }],
     defaultData: { text: '' },
   },
+  promptList: {
+    type: 'promptList',
+    label: 'Prompt List',
+    category: 'input',
+    icon: 'ListOrdered',
+    color: 'bg-blue-700',
+    inputs: [],
+    outputs: [{ id: 'text-out', dataType: 'text', label: 'Prompts (batch)' }],
+    defaultData: { text: '' },
+  },
   imageImport: {
     type: 'imageImport',
     label: 'Import Image',
@@ -55,6 +65,25 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
       useGlobalModel: true,
       seed: 0,
       randomSeed: true,
+      batchCount: 1,
+    },
+  },
+  videoGenerate: {
+    type: 'videoGenerate',
+    label: 'Generate Video',
+    category: 'ai',
+    icon: 'Clapperboard',
+    color: 'bg-fuchsia-600',
+    inputs: [
+      { id: 'prompt-in', dataType: 'text', label: 'Prompt' },
+      { id: 'image-in', dataType: 'image', label: 'First Frame (optional)' },
+    ],
+    outputs: [{ id: 'video-out', dataType: 'video', label: 'Video' }],
+    defaultData: {
+      model: 'veo-3.1-fast-generate-preview',
+      aspectRatio: '16:9',
+      resolution: '720p',
+      negativePrompt: '',
     },
   },
   imageEdit: {
@@ -165,13 +194,23 @@ export const NODE_DEFINITIONS: Record<string, NodeDefinition> = {
     outputs: [],
     defaultData: { label: 'Output' },
   },
+  videoDisplay: {
+    type: 'videoDisplay',
+    label: 'Display Video',
+    category: 'output',
+    icon: 'MonitorPlay',
+    color: 'bg-emerald-700',
+    inputs: [{ id: 'video-in', dataType: 'video', label: 'Video' }],
+    outputs: [],
+    defaultData: { label: 'Video Output' },
+  },
 };
 
 export const NODE_CATEGORIES = [
-  { id: 'input', label: 'Input', types: ['textPrompt', 'imageImport'] },
-  { id: 'ai', label: 'AI Models', types: ['imageGenerate', 'imageEdit'] },
+  { id: 'input', label: 'Input', types: ['textPrompt', 'promptList', 'imageImport'] },
+  { id: 'ai', label: 'AI Models', types: ['imageGenerate', 'imageEdit', 'videoGenerate'] },
   { id: 'processing', label: 'Processing', types: ['blur', 'resize', 'crop', 'invert', 'compose'] },
   { id: 'text', label: 'Text Tools', types: ['promptConcat'] },
-  { id: 'output', label: 'Output', types: ['imageDisplay'] },
+  { id: 'output', label: 'Output', types: ['imageDisplay', 'videoDisplay'] },
   { id: 'utility', label: 'Utility', types: ['stickyNote'] },
 ] as const;

@@ -1,5 +1,6 @@
 import { getGeminiClient } from './client';
 import { getImageDimensions } from '../imageProcessing/imageConversion';
+import { throttledAICall } from '../execution/taskQueue';
 import type { ImagePayload } from '../../types/nodes';
 
 interface EditImageOptions {
@@ -13,21 +14,23 @@ export async function editImage(options: EditImageOptions): Promise<ImagePayload
 
   console.log('[BxAI] Editing image with model:', options.model, '| instruction:', options.instruction.slice(0, 80));
 
-  const response = await ai.models.generateContent({
-    model: options.model,
-    contents: [
-      {
-        inlineData: {
-          mimeType: options.sourceImage.mimeType,
-          data: options.sourceImage.base64,
+  const response = await throttledAICall(() =>
+    ai.models.generateContent({
+      model: options.model,
+      contents: [
+        {
+          inlineData: {
+            mimeType: options.sourceImage.mimeType,
+            data: options.sourceImage.base64,
+          },
         },
+        { text: options.instruction },
+      ],
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
       },
-      { text: options.instruction },
-    ],
-    config: {
-      responseModalities: ['TEXT', 'IMAGE'],
-    },
-  });
+    })
+  );
 
   console.log('[BxAI] Edit response - candidates:', response.candidates?.length ?? 'undefined');
   console.log('[BxAI] Prompt feedback:', JSON.stringify(response.promptFeedback ?? null));

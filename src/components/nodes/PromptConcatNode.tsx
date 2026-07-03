@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Link2 } from 'lucide-react';
-import { BaseNode, useNodeData } from './BaseNode';
+import { BaseNode } from './BaseNode';
+import { useNodeData } from './useNodeData';
 import type { PromptConcatData } from '../../types/nodes';
 
 export const PromptConcatNode = memo(function PromptConcatNode(props: NodeProps) {

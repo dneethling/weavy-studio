@@ -1,6 +1,7 @@
 import {
   Type, Sparkles, Pencil, Image, Layers, Upload,
   Droplets, Maximize2, Crop, SunMoon, Link2, StickyNote,
+  ListOrdered, Clapperboard, MonitorPlay,
 } from 'lucide-react';
 import { NODE_CATEGORIES, NODE_DEFINITIONS } from '../../constants/nodeDefinitions';
 import { cn } from '../../utils/cn';
@@ -19,6 +20,9 @@ const ICONS: Record<string, typeof Type> = {
   SunMoon,
   Link2,
   StickyNote,
+  ListOrdered,
+  Clapperboard,
+  MonitorPlay,
 };
 
 export function Sidebar() {

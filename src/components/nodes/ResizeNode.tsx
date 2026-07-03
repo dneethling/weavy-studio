@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Maximize2 } from 'lucide-react';
-import { BaseNode, useNodeData } from './BaseNode';
+import { BaseNode } from './BaseNode';
+import { useNodeData } from './useNodeData';
 import { base64ToDataUrl } from '../../services/imageProcessing/imageConversion';
 import type { ResizeData } from '../../types/nodes';
 

@@ -9,11 +9,12 @@ import { executeWorkflow } from '../../services/execution/engine';
 import { useState, useRef } from 'react';
 import { Modal } from '../shared/Modal';
 import { saveWorkflow, loadWorkflows, deleteWorkflow, exportWorkflow, exportAllWorkflows, importWorkflows } from '../../services/storage/workflowStorage';
-import { GEMINI_MODELS } from '../../constants/defaults';
+import { GEMINI_MODELS, CONCURRENCY_OPTIONS } from '../../constants/defaults';
 
 export function TopToolbar() {
   const isRunning = useExecutionStore((s) => s.isRunning);
   const resetExecution = useExecutionStore((s) => s.resetExecution);
+  const cancelExecution = useExecutionStore((s) => s.cancelExecution);
   const clearWorkflow = useWorkflowStore((s) => s.clearWorkflow);
   const getWorkflowJSON = useWorkflowStore((s) => s.getWorkflowJSON);
   const loadWorkflow = useWorkflowStore((s) => s.loadWorkflow);
@@ -21,6 +22,8 @@ export function TopToolbar() {
   const setApiKey = useSettingsStore((s) => s.setApiKey);
   const globalModel = useSettingsStore((s) => s.globalModel);
   const setGlobalModel = useSettingsStore((s) => s.setGlobalModel);
+  const maxConcurrency = useSettingsStore((s) => s.maxConcurrency);
+  const setMaxConcurrency = useSettingsStore((s) => s.setMaxConcurrency);
   const addToast = useToastStore((s) => s.addToast);
   const authUser = useAuthStore((s) => s.user);
   const authSignOut = useAuthStore((s) => s.signOut);
@@ -79,8 +82,16 @@ export function TopToolbar() {
     addToast('info', 'Running workflow...');
 
     try {
-      await executeWorkflow();
-      addToast('success', 'Workflow completed successfully!');
+      const summary = await executeWorkflow();
+      if (summary.cancelled) {
+        addToast('info', 'Workflow stopped.');
+      } else {
+        const produced = [
+          summary.imageCount > 0 && `${summary.imageCount} image${summary.imageCount === 1 ? '' : 's'}`,
+          summary.videoCount > 0 && `${summary.videoCount} video${summary.videoCount === 1 ? '' : 's'}`,
+        ].filter(Boolean).join(' and ');
+        addToast('success', produced ? `Workflow completed — generated ${produced}.` : 'Workflow completed successfully!');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       addToast('error', `Workflow failed: ${message}`);
@@ -89,8 +100,9 @@ export function TopToolbar() {
   };
 
   const handleStop = () => {
-    resetExecution();
-    addToast('info', 'Workflow stopped.');
+    // Graceful cancel — in-flight API calls finish, queued work aborts
+    cancelExecution();
+    addToast('info', 'Stopping after in-flight requests finish…');
   };
 
   const handleSave = () => {
@@ -359,6 +371,26 @@ export function TopToolbar() {
               . Your key is stored locally in your browser.
             </p>
           </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-zinc-400">
+              Parallel AI Requests
+            </label>
+            <select
+              value={maxConcurrency}
+              onChange={(e) => setMaxConcurrency(Number(e.target.value))}
+              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:border-purple-500"
+            >
+              {CONCURRENCY_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n === 1 ? '1 (sequential)' : `${n} at a time`}</option>
+              ))}
+            </select>
+            <p className="text-xs text-zinc-500">
+              How many generation requests run at once during batch runs. Lower this if you hit
+              rate limits; raise it on a paid tier for faster batches.
+            </p>
+          </div>
+
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setShowSettingsModal(false)}>
               Cancel

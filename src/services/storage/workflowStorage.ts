@@ -7,13 +7,19 @@ const STORAGE_KEY = 'bxai-studio-workflows';
 export function saveWorkflow(name: string, nodes: Node[], edges: Edge[]): void {
   const workflows = loadWorkflows();
 
-  // Strip output images from node data to save space
+  // Strip output media from node data to save space — batches and videos
+  // especially would blow the localStorage quota
   const cleanNodes = nodes.map((node) => ({
     ...node,
     data: {
       ...node.data,
       outputImage: undefined,
+      outputImages: undefined,
+      outputVideo: undefined,
+      outputVideos: undefined,
       displayImage: undefined,
+      displayImages: undefined,
+      displayVideos: undefined,
     },
   }));
 
@@ -69,7 +75,7 @@ export function importWorkflows(file: File): Promise<number> {
         const existing = loadWorkflows();
         const existingIds = new Set(existing.map((w) => w.id));
 
-        let imported: SavedWorkflow[] = [];
+        const imported: SavedWorkflow[] = [];
 
         // Handle both single workflow and array of workflows
         const items = Array.isArray(parsed) ? parsed : [parsed];

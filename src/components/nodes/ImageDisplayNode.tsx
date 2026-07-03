@@ -1,13 +1,15 @@
 import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { Image, Download, BookmarkPlus } from 'lucide-react';
-import { BaseNode, useNodeData } from './BaseNode';
+import { BaseNode } from './BaseNode';
+import { useNodeData } from './useNodeData';
 import { base64ToDataUrl } from '../../services/imageProcessing/imageConversion';
+import { downloadMedia, downloadMediaAsZip } from '../../utils/media';
 import { useGalleryStore } from '../../store/useGalleryStore';
 import { useWorkflowStore } from '../../store/useWorkflowStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { GEMINI_MODELS } from '../../constants/defaults';
-import type { ImageDisplayData } from '../../types/nodes';
+import type { ImageDisplayData, ImagePayload } from '../../types/nodes';
 
 /**
  * Walk upstream edges from a Display Image node to find the AI node that generated
@@ -46,51 +48,83 @@ function useSourceMetadata(nodeId: string) {
   return { modelLabel: undefined, aspectRatio: undefined };
 }
 
-function buildFilename(label: string | undefined, modelLabel: string | undefined, aspectRatio: string | undefined, ext: string) {
+function buildFilename(label: string | undefined, modelLabel: string | undefined, aspectRatio: string | undefined, suffix?: string) {
   const parts = ['bxai'];
   if (modelLabel) parts.push(modelLabel.replace(/[^a-zA-Z0-9.()-]/g, '_'));
   if (aspectRatio) parts.push(aspectRatio.replace(':', 'x'));
   parts.push(label || 'output');
-  return `${parts.join('-')}.${ext}`;
+  if (suffix) parts.push(suffix);
+  return parts.join('-');
 }
 
 export const ImageDisplayNode = memo(function ImageDisplayNode(props: NodeProps) {
   const [data] = useNodeData<ImageDisplayData>(props);
-  const addToGallery = useGalleryStore((s) => s.addImage);
+  const addMedia = useGalleryStore((s) => s.addMedia);
   const { modelLabel, aspectRatio } = useSourceMetadata(props.id);
 
+  const images: ImagePayload[] =
+    data.displayImages && data.displayImages.length > 0
+      ? data.displayImages
+      : data.displayImage
+        ? [data.displayImage]
+        : [];
+
   const handleDownload = () => {
-    if (!data.displayImage) return;
-    const ext = data.displayImage.mimeType.split('/')[1];
-    const filename = buildFilename(data.label, modelLabel, aspectRatio, ext);
-    const link = document.createElement('a');
-    link.href = base64ToDataUrl(data.displayImage.base64, data.displayImage.mimeType);
-    link.download = filename;
-    link.click();
+    if (images.length === 0) return;
+    if (images.length === 1) {
+      downloadMedia(images[0], buildFilename(data.label, modelLabel, aspectRatio));
+    } else {
+      downloadMediaAsZip(
+        images.map((media, i) => ({
+          media,
+          name: buildFilename(data.label, modelLabel, aspectRatio, String(i + 1)),
+        })),
+        `${buildFilename(data.label, modelLabel, aspectRatio)}.zip`
+      );
+    }
   };
 
   const handleAddToGallery = () => {
-    if (!data.displayImage) return;
-    addToGallery(data.displayImage, props.id, data.label || 'Output');
+    images.forEach((img, i) => {
+      addMedia(img, props.id, images.length > 1 ? `${data.label || 'Output'} ${i + 1}` : data.label || 'Output');
+    });
   };
 
   return (
     <BaseNode id={props.id} type="imageDisplay" icon={<Image size={14} />} selected={props.selected}>
       <div className="space-y-2">
-        {data.displayImage ? (
+        {images.length > 0 ? (
           <>
-            <img
-              src={base64ToDataUrl(data.displayImage.base64, data.displayImage.mimeType)}
-              alt={data.label}
-              className="w-full rounded border border-zinc-700"
-            />
+            {images.length === 1 ? (
+              <img
+                src={base64ToDataUrl(images[0].base64, images[0].mimeType)}
+                alt={data.label}
+                className="w-full rounded border border-zinc-700"
+              />
+            ) : (
+              <div className="space-y-1">
+                <div className={images.length === 2 ? 'grid grid-cols-2 gap-1' : 'grid grid-cols-3 gap-1'}>
+                  {images.slice(0, 9).map((img, i) => (
+                    <img
+                      key={i}
+                      src={base64ToDataUrl(img.base64, img.mimeType)}
+                      alt={`${data.label} ${i + 1}`}
+                      className="w-full aspect-square object-cover rounded border border-zinc-700"
+                    />
+                  ))}
+                </div>
+                <p className="text-[9px] text-zinc-500 text-center">
+                  {images.length} outputs{images.length > 9 ? ' (showing 9)' : ''}
+                </p>
+              </div>
+            )}
             <div className="flex gap-1">
               <button
                 onClick={handleDownload}
                 className="nodrag flex items-center gap-1 px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-[10px] text-zinc-400 hover:text-zinc-200 transition-colors"
               >
                 <Download size={10} />
-                Save
+                {images.length > 1 ? `Save all (${images.length}) ZIP` : 'Save'}
               </button>
               <button
                 onClick={handleAddToGallery}

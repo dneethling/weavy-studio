@@ -1,5 +1,6 @@
 import { getGeminiClient } from './client';
 import { getImageDimensions } from '../imageProcessing/imageConversion';
+import { throttledAICall } from '../execution/taskQueue';
 import type { ImagePayload } from '../../types/nodes';
 
 interface GenerateImageOptions {
@@ -17,28 +18,107 @@ interface GenerateImageOptions {
  */
 export async function generateImage(options: GenerateImageOptions): Promise<ImagePayload> {
   if (options.model.startsWith('imagen')) {
-    return generateWithImagen(options);
+    const [image] = await generateWithImagen(options, 1);
+    return image;
   }
-  return generateWithGemini(options);
+  return throttledAICall(() => generateWithGemini(options));
 }
 
-async function generateWithImagen(options: GenerateImageOptions): Promise<ImagePayload> {
+/** Imagen supports up to 4 images per request — batch natively when we can. */
+const IMAGEN_MAX_PER_CALL = 4;
+
+/**
+ * Generates `count` variations of a prompt as efficiently as the model allows:
+ * - Imagen: chunks of up to 4 images per API call.
+ * - Gemini: `count` parallel calls with deterministic per-variation seeds,
+ *   throttled by the global AI queue.
+ *
+ * Tolerates partial failures — returns every variation that succeeded and
+ * only throws if ALL of them failed.
+ */
+export async function generateImageBatch(
+  options: GenerateImageOptions,
+  count: number
+): Promise<ImagePayload[]> {
+  const total = Math.max(1, count);
+
+  if (options.model.startsWith('imagen')) {
+    const chunks: number[] = [];
+    for (let remaining = total; remaining > 0; remaining -= IMAGEN_MAX_PER_CALL) {
+      chunks.push(Math.min(remaining, IMAGEN_MAX_PER_CALL));
+    }
+    const results = await Promise.allSettled(
+      chunks.map((n, i) =>
+        generateWithImagen(
+          // Vary the seed per chunk so chunks don't repeat each other
+          { ...options, seed: options.seed !== undefined ? options.seed + i : undefined },
+          n
+        )
+      )
+    );
+    return collectBatch(results.map((r) => (r.status === 'fulfilled' ? r.value : r)), total);
+  }
+
+  const results = await Promise.allSettled(
+    Array.from({ length: total }, (_, i) =>
+      throttledAICall(() =>
+        generateWithGemini({
+          ...options,
+          // Deterministic per-variation seed so a fixed seed reproduces the batch
+          seed: options.seed !== undefined ? options.seed + i : undefined,
+        })
+      )
+    )
+  );
+  return collectBatch(results.map((r) => (r.status === 'fulfilled' ? [r.value] : r)), total);
+}
+
+function collectBatch(
+  results: Array<ImagePayload[] | PromiseRejectedResult>,
+  total: number
+): ImagePayload[] {
+  const images: ImagePayload[] = [];
+  let firstError: unknown = null;
+
+  for (const result of results) {
+    if (Array.isArray(result)) {
+      images.push(...result);
+    } else if (!firstError) {
+      firstError = result.reason;
+    }
+  }
+
+  if (images.length === 0) {
+    throw firstError instanceof Error ? firstError : new Error(String(firstError ?? 'Generation failed'));
+  }
+  if (images.length < total) {
+    console.warn(`[BxAI] Batch partially succeeded: ${images.length}/${total} images.`);
+  }
+  return images;
+}
+
+async function generateWithImagen(
+  options: GenerateImageOptions,
+  numberOfImages: number
+): Promise<ImagePayload[]> {
   const ai = getGeminiClient();
 
   if (options.referenceImage) {
     console.warn('[BxAI] Imagen models do not support reference images. The reference will be ignored. Use a Gemini model for reference-based generation.');
   }
-  console.log('[BxAI] Generating with Imagen model:', options.model, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)');
+  console.log('[BxAI] Generating with Imagen model:', options.model, '| count:', numberOfImages, '| seed:', options.seed ?? 'none', '| aspectRatio:', options.aspectRatio ?? '(default)');
 
-  const response = await ai.models.generateImages({
-    model: options.model,
-    prompt: options.prompt,
-    config: {
-      numberOfImages: 1,
-      ...(options.aspectRatio && { aspectRatio: options.aspectRatio }),
-      ...(options.seed !== undefined && { seed: options.seed }),
-    },
-  });
+  const response = await throttledAICall(() =>
+    ai.models.generateImages({
+      model: options.model,
+      prompt: options.prompt,
+      config: {
+        numberOfImages,
+        ...(options.aspectRatio && { aspectRatio: options.aspectRatio }),
+        ...(options.seed !== undefined && { seed: options.seed }),
+      },
+    })
+  );
 
   console.log('[BxAI] Imagen response received, images:', response.generatedImages?.length ?? 0);
 
@@ -47,23 +127,21 @@ async function generateWithImagen(options: GenerateImageOptions): Promise<ImageP
     throw new Error('Imagen returned no images. Try a different prompt.');
   }
 
-  const imageData = generated[0].image;
-  if (!imageData?.imageBytes) {
-    throw new Error('Imagen returned an empty image.');
+  const images: ImagePayload[] = [];
+  for (const item of generated) {
+    if (!item.image?.imageBytes) continue;
+    const base64 = item.image.imageBytes;
+    const mimeType = 'image/png' as ImagePayload['mimeType'];
+    const dimensions = await getImageDimensions(base64, mimeType);
+    images.push({ base64, mimeType, width: dimensions.width, height: dimensions.height });
   }
 
-  const base64 = imageData.imageBytes;
-  const mimeType = 'image/png' as ImagePayload['mimeType'];
-  const dimensions = await getImageDimensions(base64, mimeType);
+  if (images.length === 0) {
+    throw new Error('Imagen returned only empty images.');
+  }
 
-  console.log('[BxAI] Imagen image generated:', dimensions.width, 'x', dimensions.height);
-
-  return {
-    base64,
-    mimeType,
-    width: dimensions.width,
-    height: dimensions.height,
-  };
+  console.log('[BxAI] Imagen generated', images.length, 'image(s):', images[0].width, 'x', images[0].height);
+  return images;
 }
 
 async function generateWithGemini(options: GenerateImageOptions): Promise<ImagePayload> {
